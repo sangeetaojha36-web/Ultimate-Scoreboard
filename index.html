@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Animated Scoreboard - WORKING</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <!-- Particle Background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Auth Section -->
+    <div class="auth-section" id="authSection">
+        <!-- Floating Icons -->
+        <div class="floating-icons">
+            <div class="floating-icon trophy-icon">🏆</div>
+            <div class="floating-icon star-icon">⭐</div>
+            <div class="floating-icon medal-icon">🥇</div>
+            <div class="floating-icon game-icon">🎮</div>
+            <div class="floating-icon crown-icon">👑</div>
+            <div class="floating-icon fire-icon">🔥</div>
+            <div class="floating-icon rocket-icon">🚀</div>
+            <div class="floating-icon gem-icon">💎</div>
+        </div>
+        
+        <div class="auth-container">
+            <h1 class="auth-title">ULTIMATE SCOREBOARD</h1>
+            <p class="auth-subtitle">Sign in to save your scores forever</p>
+            
+            <!-- Login Form -->
+            <div class="auth-form" id="loginForm">
+                <h2>Login</h2>
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <input type="text" id="loginUsername" placeholder="Username" maxlength="20">
+                        <span class="input-icon">👤</span>
+                    </div>
+                    <div class="input-wrapper">
+                        <input type="password" id="loginPassword" placeholder="Password" maxlength="50">
+                        <span class="input-icon">🔒</span>
+                        <button type="button" class="password-toggle" data-target="loginPassword">
+                            <span class="eye-icon">👁️</span>
+                            <span class="eye-slash-icon" style="display: none;">👁️‍🗨️</span>
+                        </button>
+                    </div>
+                    <button id="loginBtn" class="auth-btn">Login</button>
+                </div>
+                <p class="auth-switch">
+                    Don't have an account? <a href="#" onclick="showRegister()">Register</a>
+                </p>
+            </div>
+
+            <!-- Register Form -->
+            <div class="auth-form" id="registerForm" style="display: none;">
+                <h2>Register</h2>
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <input type="text" id="registerUsername" placeholder="Username" maxlength="20">
+                        <span class="input-icon">👤</span>
+                    </div>
+                    <div class="input-wrapper">
+                        <input type="email" id="registerEmail" placeholder="Email" maxlength="50">
+                        <span class="input-icon">📧</span>
+                    </div>
+                    <div class="input-wrapper">
+                        <input type="password" id="registerPassword" placeholder="Password (min 6 chars)" maxlength="50">
+                        <span class="input-icon">🔒</span>
+                        <button type="button" class="password-toggle" data-target="registerPassword">
+                            <span class="eye-icon">👁️</span>
+                            <span class="eye-slash-icon" style="display: none;">👁️‍🗨️</span>
+                        </button>
+                    </div>
+                    <button id="registerBtn" class="auth-btn">Register</button>
+                </div>
+                <p class="auth-switch">
+                    Already have an account? <a href="#" onclick="showLogin()">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container" id="mainContainer" style="display: none;">
+        <!-- User Header -->
+        <div class="user-header">
+            <div class="user-info">
+                <span class="welcome-text">Welcome, <span id="currentUser"></span></span>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+            </div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <h1 class="main-title">
+                <span class="title-word">ULTIMATE</span>
+                <span class="title-word">SCOREBOARD</span>
+            </h1>
+            <p class="subtitle">Where Champions Rise to the Top</p>
+            <div class="trophy-icon">🏆</div>
+        </div>
+
+        <!-- Add Score Form -->
+        <div class="add-score-section">
+            <div class="form-container">
+                <h2 class="form-title">Add New Score</h2>
+                <div class="input-group">
+                    <input type="text" id="playerName" placeholder="Player Name" maxlength="20">
+                    <input type="number" id="playerScore" placeholder="Score" min="0" max="999999">
+                    <button id="addScoreBtn" class="add-btn">
+                        <span>Add Score</span>
+                        <span class="btn-glow"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scoreboard Section -->
+        <div class="scoreboard-section">
+            <h2 class="section-title">LEADERBOARD</h2>
+            <div class="scoreboard" id="scoreboard">
+                <!-- Scores will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Update Score Modal -->
+        <div class="modal-overlay" id="updateModal">
+            <div class="modal-content">
+                <h3 class="modal-title">Update Score</h3>
+                <div class="modal-input-group">
+                    <input type="text" id="updatePlayerName" placeholder="Player Name" maxlength="20">
+                    <input type="number" id="updatePlayerScore" placeholder="Score" min="0" max="999999">
+                </div>
+                <div class="modal-buttons">
+                    <button id="cancelUpdateBtn" class="cancel-btn">Cancel</button>
+                    <button id="confirmUpdateBtn" class="confirm-btn">Update Score</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-number" id="totalPlayers">0</div>
+                <div class="stat-label">Total Players</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="highestScore">0</div>
+                <div class="stat-label">Highest Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="averageScore">0</div>
+                <div class="stat-label">Average Score</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts - FIXED ORDER -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

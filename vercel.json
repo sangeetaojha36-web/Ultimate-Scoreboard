@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/mongo-server.js",
+      "src": "api/memory-server.js",
       "use": "@vercel/node"
     },
     {
@@ -13,7 +13,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/mongo-server.js"
+      "dest": "/api/memory-server.js"
     },
     {
       "src": "/(.*)",
@@ -21,6 +21,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "JWT_SECRET": "ultimate-scoreboard-jwt-secret-2024"
   }
 }

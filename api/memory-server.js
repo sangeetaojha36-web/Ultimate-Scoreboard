@@ -1,0 +1,289 @@
+const express = require('express');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+
+// Initialize Express app
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Environment variables
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Simple in-memory storage for Vercel (will be reset on redeploy)
+let users = [];
+let scores = [];
+let userIdCounter = 1;
+let scoreIdCounter = 1;
+
+// Initialize with default user for testing
+async function initializeData() {
+    // Check if we have the test user
+    let testUser = users.find(u => u.username === 'sangeeta');
+    
+    if (!testUser) {
+        // Create the user with known password
+        const hashedPassword = await bcrypt.hash('password123', 10);
+        testUser = {
+            id: userIdCounter++,
+            username: 'sangeeta',
+            email: 'sangeetaojha36@gmail.com',
+            password: hashedPassword,
+            created_at: new Date().toISOString()
+        };
+        users.push(testUser);
+        console.log('Created default user: sangeeta with password: password123');
+    }
+    
+    console.log('In-memory storage initialized');
+    console.log('Available users:', users.map(u => ({ id: u.id, username: u.username, email: u.email })));
+}
+
+// Middleware to verify JWT token
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+}
+
+// Initialize data
+initializeData();
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        message: 'Ultimate Scoreboard API - In-Memory Storage',
+        users: users.length,
+        scores: scores.length
+    });
+});
+
+// Auth Routes
+// Register
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+
+        if (!username || !email || !password) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+
+        // Check if user already exists
+        const existingUser = users.find(u => u.username === username || u.email === email);
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username or email already exists' });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Create user
+        const newUser = {
+            id: userIdCounter++,
+            username,
+            email,
+            password: hashedPassword,
+            created_at: new Date().toISOString()
+        };
+
+        users.push(newUser);
+
+        const token = jwt.sign({ 
+            id: newUser.id.toString(), 
+            username 
+        }, JWT_SECRET);
+
+        res.status(201).json({ 
+            message: 'User created successfully', 
+            token,
+            user: { 
+                id: newUser.id.toString(), 
+                username, 
+                email 
+            }
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        console.log('Login attempt:', { username, passwordLength: password?.length || 0 });
+
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
+        // Find user
+        const user = users.find(u => u.username === username);
+
+        if (!user) {
+            console.log('User not found:', username);
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Compare password
+        const isMatch = await bcrypt.compare(password, user.password);
+        
+        if (!isMatch) {
+            console.log('Password mismatch for:', username);
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        console.log('Login successful:', username);
+        
+        const token = jwt.sign({ 
+            id: user.id.toString(), 
+            username: user.username 
+        }, JWT_SECRET);
+
+        res.json({ 
+            message: 'Login successful', 
+            token,
+            user: { 
+                id: user.id.toString(), 
+                username: user.username, 
+                email: user.email 
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Score Routes
+// Get user scores
+app.get('/api/scores', authenticateToken, (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userScores = scores.filter(s => s.user_id === userId)
+            .sort((a, b) => b.score - a.score);
+
+        res.json(userScores);
+    } catch (error) {
+        console.error('Get scores error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Add score
+app.post('/api/scores', authenticateToken, (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { player_name, score } = req.body;
+
+        if (!player_name || !score) {
+            return res.status(400).json({ error: 'Player name and score are required' });
+        }
+
+        const newScore = {
+            id: scoreIdCounter++,
+            user_id: userId,
+            player_name,
+            score: parseInt(score),
+            created_at: new Date().toISOString()
+        };
+
+        scores.push(newScore);
+
+        res.status(201).json(newScore);
+    } catch (error) {
+        console.error('Add score error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Update score
+app.put('/api/scores/:id', authenticateToken, (req, res) => {
+    try {
+        const userId = req.user.id;
+        const scoreId = parseInt(req.params.id);
+        const { player_name, score } = req.body;
+
+        if (!player_name || !score) {
+            return res.status(400).json({ error: 'Player name and score are required' });
+        }
+
+        const scoreIndex = scores.findIndex(s => s.id === scoreId && s.user_id === userId);
+        
+        if (scoreIndex === -1) {
+            return res.status(404).json({ error: 'Score not found or unauthorized' });
+        }
+
+        scores[scoreIndex] = {
+            ...scores[scoreIndex],
+            player_name,
+            score: parseInt(score),
+            updated_at: new Date().toISOString()
+        };
+
+        res.json(scores[scoreIndex]);
+    } catch (error) {
+        console.error('Update score error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Delete score
+app.delete('/api/scores/:id', authenticateToken, (req, res) => {
+    try {
+        const userId = req.user.id;
+        const scoreId = parseInt(req.params.id);
+
+        const scoreIndex = scores.findIndex(s => s.id === scoreId && s.user_id === userId);
+        
+        if (scoreIndex === -1) {
+            return res.status(404).json({ error: 'Score not found or unauthorized' });
+        }
+
+        scores.splice(scoreIndex, 1);
+
+        res.json({ message: 'Score deleted successfully' });
+    } catch (error) {
+        console.error('Delete score error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Serve static files (for production)
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname)));
+    
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'index.html'));
+    });
+}
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('Using in-memory storage (data resets on redeploy)');
+});

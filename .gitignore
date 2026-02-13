@@ -5,7 +5,7 @@ package-lock.json
 # Environment variables
 .env
 
-# Database
+# Database (for local development)
 *.db
 *.sqlite
 *.sqlite3

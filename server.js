@@ -13,7 +13,7 @@ const IS_VERCEL = process.env.VERCEL || process.env.NODE_ENV === 'production';
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '.')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Database Interface
 let dbOperations;
@@ -304,7 +304,7 @@ app.delete('/api/scores/:id', authenticateToken, async (req, res) => {
 // Catch-all route for static files support in SPAs (if we add client-side routing later)
 // For now, it ensures that / returns index.html
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start server

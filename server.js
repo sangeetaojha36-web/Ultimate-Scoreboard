@@ -44,7 +44,7 @@ function initializeDatabase() {
     )`);
 
     console.log('Database tables initialized.');
-    
+
     // Debug: Check existing users
     db.all('SELECT id, username, email FROM users', (err, users) => {
         if (err) {
@@ -88,10 +88,10 @@ app.post('/api/auth/register', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        
-        db.run('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', 
-            [username, email, hashedPassword], 
-            function(err) {
+
+        db.run('INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+            [username, email, hashedPassword],
+            function (err) {
                 if (err) {
                     if (err.message.includes('UNIQUE constraint failed')) {
                         return res.status(400).json({ error: 'Username or email already exists' });
@@ -100,8 +100,8 @@ app.post('/api/auth/register', async (req, res) => {
                 }
 
                 const token = jwt.sign({ id: this.lastID, username }, JWT_SECRET);
-                res.status(201).json({ 
-                    message: 'User created successfully', 
+                res.status(201).json({
+                    message: 'User created successfully',
                     token,
                     user: { id: this.lastID, username, email }
                 });
@@ -115,11 +115,11 @@ app.post('/api/auth/register', async (req, res) => {
 // Login
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
-    
-    console.log('Login attempt received:', { 
-        username: username, 
+
+    console.log('Login attempt received:', {
+        username: username,
         passwordLength: password ? password.length : 0,
-        body: req.body 
+        body: req.body
     });
 
     if (!username || !password) {
@@ -140,33 +140,33 @@ app.post('/api/auth/login', (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        console.log('User found:', { 
-        id: user.id, 
-        username: user.username, 
-        email: user.email,
-        passwordHash: user.password ? 'Hash exists' : 'No hash'
-    });
-    console.log('Comparing passwords...');
-    
-    try {
-        const isMatch = await bcrypt.compare(password, user.password);
-        console.log('Password comparison result:', isMatch);
-        
-        if (!isMatch) {
-            console.log('Login failed: Password mismatch');
-            // Debug: Let's try to understand what went wrong
-            console.log('Debug info:', {
-                inputPasswordLength: password.length,
-                storedHashLength: user.password ? user.password.length : 0,
-                storedHashStart: user.password ? user.password.substring(0, 10) : 'N/A'
-            });
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
+        console.log('User found:', {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            passwordHash: user.password ? 'Hash exists' : 'No hash'
+        });
+        console.log('Comparing passwords...');
+
+        try {
+            const isMatch = await bcrypt.compare(password, user.password);
+            console.log('Password comparison result:', isMatch);
+
+            if (!isMatch) {
+                console.log('Login failed: Password mismatch');
+                // Debug: Let's try to understand what went wrong
+                console.log('Debug info:', {
+                    inputPasswordLength: password.length,
+                    storedHashLength: user.password ? user.password.length : 0,
+                    storedHashStart: user.password ? user.password.substring(0, 10) : 'N/A'
+                });
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
 
             console.log('Login successful for user:', user.username);
             const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
-            res.json({ 
-                message: 'Login successful', 
+            res.json({
+                message: 'Login successful',
                 token,
                 user: { id: user.id, username: user.username, email: user.email }
             });
@@ -181,7 +181,7 @@ app.post('/api/auth/login', (req, res) => {
 // Get user scores
 app.get('/api/scores', authenticateToken, (req, res) => {
     const userId = req.user.id;
-    
+
     db.all('SELECT * FROM scores WHERE user_id = ? ORDER BY score DESC', [userId], (err, scores) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
@@ -199,15 +199,15 @@ app.post('/api/scores', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'Player name and score are required' });
     }
 
-    db.run('INSERT INTO scores (user_id, player_name, score) VALUES (?, ?, ?)', 
-        [userId, player_name, score], 
-        function(err) {
+    db.run('INSERT INTO scores (user_id, player_name, score) VALUES (?, ?, ?)',
+        [userId, player_name, score],
+        function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Database error' });
             }
-            res.status(201).json({ 
-                message: 'Score added successfully', 
-                id: this.lastID 
+            res.status(201).json({
+                message: 'Score added successfully',
+                id: this.lastID
             });
         }
     );
@@ -223,9 +223,9 @@ app.put('/api/scores/:id', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'Player name and score are required' });
     }
 
-    db.run('UPDATE scores SET player_name = ?, score = ? WHERE id = ? AND user_id = ?', 
-        [player_name, score, id, userId], 
-        function(err) {
+    db.run('UPDATE scores SET player_name = ?, score = ? WHERE id = ? AND user_id = ?',
+        [player_name, score, id, userId],
+        function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Database error' });
             }
@@ -242,7 +242,7 @@ app.delete('/api/scores/:id', authenticateToken, (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    db.run('DELETE FROM scores WHERE id = ? AND user_id = ?', [id, userId], function(err) {
+    db.run('DELETE FROM scores WHERE id = ? AND user_id = ?', [id, userId], function (err) {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
         }
@@ -254,6 +254,11 @@ app.delete('/api/scores/:id', authenticateToken, (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+// Export for Vercel
+module.exports = app;

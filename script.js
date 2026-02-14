@@ -1,13 +1,13 @@
 // Wait for DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM Loaded! Starting initialization...');
 
     // Initialize GSAP
     gsap.registerPlugin(ScrollTrigger);
 
     // API Configuration
-    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:3001/api' 
+    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+        ? 'http://localhost:3001/api'
         : '/api';
 
     // Authentication State
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check for existing session
     const savedToken = localStorage.getItem('authToken');
     const savedUser = localStorage.getItem('currentUser');
-    
+
     if (savedToken && savedUser) {
         authToken = savedToken;
         currentUser = JSON.parse(savedUser);
@@ -28,10 +28,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let scores = [];
 
     // Auth Functions
-    window.showRegister = function() {
+    window.showRegister = function () {
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('registerForm').style.display = 'block';
-        
+
         gsap.from('#registerForm', {
             duration: 0.5,
             opacity: 0,
@@ -40,10 +40,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    window.showLogin = function() {
+    window.showLogin = function () {
         document.getElementById('registerForm').style.display = 'none';
         document.getElementById('loginForm').style.display = 'block';
-        
+
         gsap.from('#loginForm', {
             duration: 0.5,
             opacity: 0,
@@ -56,10 +56,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('authSection').classList.add('hide');
         document.getElementById('mainContainer').classList.add('show');
         document.getElementById('currentUser').textContent = currentUser.username;
-        
+
         // Load user scores
         loadScores();
-        
+
         // Initialize animations
         initializeAnimations();
     }
@@ -94,8 +94,8 @@ document.addEventListener('DOMContentLoaded', function() {
             config.headers.Authorization = `Bearer ${authToken}`;
         }
 
-        console.log('API Request:', { 
-            url: url, 
+        console.log('API Request:', {
+            url: url,
             method: config.method || 'GET',
             hasAuth: !!authToken,
             body: config.body ? JSON.parse(config.body) : null
@@ -104,17 +104,17 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(url, config);
             const data = await response.json();
-            
+
             console.log('API Response:', {
                 status: response.status,
                 ok: response.ok,
                 data: data
             });
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Request failed');
             }
-            
+
             return data;
         } catch (error) {
             console.error('API Error:', error);
@@ -129,16 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: JSON.stringify({ username, password })
             });
-            
+
             console.log('Login successful:', data);
             authToken = data.token;
             currentUser = data.user;
-            
+
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
+
             showMainApp();
-            
+
             return data;
         } catch (error) {
             console.error('Login error:', error);
@@ -152,15 +152,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: JSON.stringify({ username, email, password })
             });
-            
+
             authToken = data.token;
             currentUser = data.user;
-            
+
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
+
             showMainApp();
-            
+
             return data;
         } catch (error) {
             alert(error.message || 'Registration failed');
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: JSON.stringify({ player_name: playerName, score: playerScore })
             });
-            
+
             await loadScores();
         } catch (error) {
             alert(error.message || 'Failed to add score');
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'PUT',
                 body: JSON.stringify({ player_name: playerName, score: playerScore })
             });
-            
+
             await loadScores();
         } catch (error) {
             alert(error.message || 'Failed to update score');
@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
             await apiRequest(`/scores/${scoreId}`, {
                 method: 'DELETE'
             });
-            
+
             await loadScores();
         } catch (error) {
             alert(error.message || 'Failed to delete score');
@@ -332,10 +332,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Delete Score Function
-    window.deleteScore = function(index) {
+    window.deleteScore = function (index) {
         console.log('Deleting score at index:', index);
         const score = scores[index];
-        
+
         if (score && score.id) {
             const scoreCards = document.querySelectorAll('.score-card');
             const scoreCard = scoreCards[index];
@@ -356,29 +356,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Update Score Function
-    window.updateScore = function(index) {
+    window.updateScore = function (index) {
         console.log('Updating score at index:', index);
         const score = scores[index];
-        
+
         if (score) {
             // Populate modal with current data
             document.getElementById('updatePlayerName').value = score.name;
             document.getElementById('updatePlayerScore').value = score.score;
-            
+
             // Store the index being updated
             window.currentUpdateIndex = index;
-            
+
             // Show modal
             const modal = document.getElementById('updateModal');
             modal.style.display = 'flex';
-            
+
             // Animate modal appearance
-            gsap.fromTo(modal, 
+            gsap.fromTo(modal,
                 { opacity: 0 },
                 { opacity: 1, duration: 0.3 }
             );
-            
-            gsap.fromTo('.modal-content', 
+
+            gsap.fromTo('.modal-content',
                 { scale: 0.8, opacity: 0 },
                 { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.7)' }
             );
@@ -386,9 +386,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Close Modal Function
-    window.closeUpdateModal = function() {
+    window.closeUpdateModal = function () {
         const modal = document.getElementById('updateModal');
-        
+
         gsap.to(modal, {
             opacity: 0,
             duration: 0.2,
@@ -396,18 +396,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 modal.style.display = 'none';
             }
         });
-        
+
         window.currentUpdateIndex = null;
     }
 
     // Confirm Update Function
-    window.confirmUpdate = function() {
+    window.confirmUpdate = function () {
         const name = document.getElementById('updatePlayerName').value.trim();
         const score = parseInt(document.getElementById('updatePlayerScore').value);
-        
+
         if (name && !isNaN(score) && score > 0 && window.currentUpdateIndex !== null) {
             const currentScore = scores[window.currentUpdateIndex];
-            
+
             if (currentScore && currentScore.id) {
                 // Success animation
                 const confirmBtn = document.getElementById('confirmUpdateBtn');
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     yoyo: true,
                     repeat: 1
                 });
-                
+
                 // Close modal and update via API
                 closeUpdateModal();
                 updateScoreRequest(currentScore.id, name, score);
@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 yoyo: true,
                 repeat: 5
             });
-            
+
             alert('Please enter a valid name and score greater than 0!');
         }
     }
@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
             value: target,
             duration: 1,
             ease: 'power2.out',
-            onUpdate: function() {
+            onUpdate: function () {
                 element.textContent = Math.round(this.targets()[0].value).toLocaleString();
             }
         });
@@ -588,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Close modal when clicking overlay
     if (modalOverlay) {
-        modalOverlay.addEventListener('click', function(e) {
+        modalOverlay.addEventListener('click', function (e) {
             if (e.target === modalOverlay) {
                 closeUpdateModal();
             }
@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const updatePlayerScore = document.getElementById('updatePlayerScore');
 
     if (updatePlayerName) {
-        updatePlayerName.addEventListener('keypress', function(e) {
+        updatePlayerName.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 confirmUpdate();
             }
@@ -608,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (updatePlayerScore) {
-        updatePlayerScore.addEventListener('keypress', function(e) {
+        updatePlayerScore.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 confirmUpdate();
             }
@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (addScoreBtn && playerNameInput && playerScoreInput) {
         console.log('Add score button found and event listener attached!');
 
-        addScoreBtn.addEventListener('click', function(e) {
+        addScoreBtn.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('Add Score button clicked!');
 
@@ -663,9 +663,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 playerScoreInput.value = '';
 
                 // Scroll to scoreboard
-                document.querySelector('.scoreboard-section').scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'nearest' 
+                document.querySelector('.scoreboard-section').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest'
                 });
             } else {
                 console.log('Invalid input!');
@@ -682,13 +682,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Enter key support
-        playerNameInput.addEventListener('keypress', function(e) {
+        playerNameInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 addScoreBtn.click();
             }
         });
 
-        playerScoreInput.addEventListener('keypress', function(e) {
+        playerScoreInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 addScoreBtn.click();
             }
@@ -703,16 +703,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const logoutBtn = document.getElementById('logoutBtn');
 
     if (loginBtn) {
-        loginBtn.addEventListener('click', function() {
+        loginBtn.addEventListener('click', function () {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
-            
-            console.log('Login button clicked:', { 
-                username: username, 
+
+            console.log('Login button clicked:', {
+                username: username,
                 passwordLength: password ? password.length : 0,
-                hasPassword: !!password 
+                hasPassword: !!password
             });
-            
+
             if (username && password) {
                 login(username, password);
             } else {
@@ -722,11 +722,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (registerBtn) {
-        registerBtn.addEventListener('click', function() {
+        registerBtn.addEventListener('click', function () {
             const username = document.getElementById('registerUsername').value.trim();
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
-            
+
             if (username && email && password) {
                 register(username, email, password);
             } else {
@@ -740,13 +740,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Enter key support for auth forms
-    document.getElementById('loginPassword')?.addEventListener('keypress', function(e) {
+    document.getElementById('loginPassword')?.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             loginBtn?.click();
         }
     });
 
-    document.getElementById('registerPassword')?.addEventListener('keypress', function(e) {
+    document.getElementById('registerPassword')?.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             registerBtn?.click();
         }
@@ -773,12 +773,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Password Toggle Functionality
     document.querySelectorAll('.password-toggle').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const targetId = this.getAttribute('data-target');
             const input = document.getElementById(targetId);
             const eyeIcon = this.querySelector('.eye-icon');
             const eyeSlashIcon = this.querySelector('.eye-slash-icon');
-            
+
             if (input.type === 'password') {
                 input.type = 'text';
                 eyeIcon.style.display = 'none';
@@ -788,7 +788,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 eyeIcon.style.display = 'block';
                 eyeSlashIcon.style.display = 'none';
             }
-            
+
             // Add a small animation
             gsap.to(this, {
                 scale: 1.2,
